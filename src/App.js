@@ -58,25 +58,42 @@ export default function App() {
   
   return (
     <div className="App">
-      <div className="dashboard__nav--content dashboard__nav--content-border">
-        <div className="flex align-center">
-          <figure className="logo">
-            <figure style={{display: 'flex'}}>
-              <img src='./public/img/Frontend Simplified Logo.853fbda.png' alt="" class="logo__img" />
-            </figure>
-          </figure>
-        </div>
-        <div>
-          <button onClick={signUp}>Sign up</button>
-          <button onClick={signIn}>Sign in</button>
-          {loading ? 'Loading...' : user.email}
-          <button onClick={signOff}>Sign out</button>
-        </div>
+      <div className="nav">
+        <div className="nav__container">
+          <div className='nav__row'>
+              <figure className='nav__logo'>
+                  <img className="logo__img" src='.\public\img\Frontend_Simplified_logo;transparent_bkgd.png' alt="" />
+              </figure>
+            <div>
+              <button onClick={signUp}>Sign up</button>
+              <button onClick={signIn}>Sign in</button>
+              {loading ? 'Loading...' : user.email}
+              <button onClick={signOff}>Sign out</button>
+            </div>
+          </div>
+        </div>  
       </div>
     </div>
-    
   );
 }
 
 
 {/* <link data-n-head="ssr" rel="icon" type="image/x-icon" href="/favicon.ico"></link> */}
+
+    // <div className="App">
+    //   <div className="dashboard__nav--content dashboard__nav--content-border">
+    //     <div className="flex align-center">
+    //       <figure className="logo">
+    //         <figure style={{display: 'flex'}}>
+    //           <img src='./public/img/Frontend Simplified Logo.853fbda.png' alt="" class="logo__img" />
+    //         </figure>
+    //       </figure>
+    //     </div>
+    //     <div>
+    //       <button onClick={signUp}>Sign up</button>
+    //       <button onClick={signIn}>Sign in</button>
+    //       {loading ? 'Loading...' : user.email}
+    //       <button onClick={signOff}>Sign out</button>
+    //     </div>
+    //   </div>
+    // </div>
