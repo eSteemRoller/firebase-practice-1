@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css';
+import FrontendSimplifiedLogo from './assets/Frontend_Simplified_logo;transparent_bkgd.png';
 import { auth } from './firebase/init';
 import { 
   createUserWithEmailAndPassword, 
@@ -12,24 +13,22 @@ import {
 
 export default function App() {
 
-  const [user, setUser] = React.useState({});
-  const [loading, setLoading] = React.useState(true);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const isLoggedIn = user && user.email
 
-  React.useEffect(() => {
-    onAuthStateChanged(auth, (user) => {
+  useEffect(() => {
+    const notLoggedIn = onAuthStateChanged(auth, (user) => {
+      setUser(user);
       setLoading(false);
-      console.log(user);
-      if (user) {
-        setUser(user)
-      }
-    })
+    });
+    return () => notLoggedIn();
   }, []);
 
   function signUp() {
     createUserWithEmailAndPassword(auth, 'email@email.com', 'test123')
       .then((userCredential) => {
-        // Signed up
-        const user = userCredential.user;
+        setUser(userCredential.user);  // Signed up
         console.log(user);
       })
       .catch((error) => {
@@ -40,39 +39,55 @@ export default function App() {
   function signIn() {
     signInWithEmailAndPassword(auth, 'email@email.com', 'test123')
       .then((userCredential) => {
-        // Signed in
-        const user = userCredential.user;
-        console.log(user); // First letter of email: user.email[0].toUpperCase()
-        setUser(user);
+        setUser(userCredential.user);  // Signed in
+        console.log(user);  // First letter of email: user.email[0].toUpperCase()
       })
       .catch((error) => {
         console.log(error);
       })
   }
 
-  function signOff() {
-    signOut(auth);
-    setUser({});
+  function handleSignOut() {
+    signOut(auth)
+      .then(() => {
+        setUser(null);
+      }) 
+      .catch((error) => {
+      console.error(error);
+    });
   }
 
   
   return (
     <div className="App">
-      <div className="nav">
+      <nav className="nav">
         <div className="nav__container">
           <div className='nav__row'>
               <figure className='nav__logo'>
-                  <img className="logo__img" src='.\public\img\Frontend_Simplified_logo;transparent_bkgd.png' alt="" />
+                {loading ? (
+                  <>
+                    <img src={FrontendSimplifiedLogo} alt="Frontend Simplified logo" />
+                  </>
+                ) : (
+                  <div className='nav__logo--skeleton skeleton no-cursor'></div>  
+                )}
               </figure>
-            <div>
-              <button onClick={signUp}>Sign up</button>
-              <button onClick={signIn}>Sign in</button>
-              {loading ? 'Loading...' : user.email}
-              <button onClick={signOff}>Sign out</button>
-            </div>
+              <div className='nav__buttons'>
+                {loading ? (
+                  <>
+                    <button className='btn' onClick={signUp}>Sign up</button>
+                    <button className='btn' onClick={signIn}>Log in</button>
+                  </>
+                ) : isLoggedIn ? (
+                  <></>
+              <div>
+                <div className='button__skeleton skeleton no-cursor'></div>
+                <div className='button__skeleton skeleton no-cursor'></div>
+              </div>
+              )}
           </div>
         </div>  
-      </div>
+      </nav>
     </div>
   );
 }
