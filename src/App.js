@@ -1,5 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
+// import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+// import { Link } from 'react-router-dom';
 import './App.css';
 import FrontendSimplifiedLogo from './assets/Frontend_Simplified_logo;transparent_bkgd.png';
 import { auth } from './firebase/init';
@@ -15,6 +17,9 @@ export default function App() {
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hasSignedUpSession, setHasSignedUpSession] = useState(false);
+  const [dialogVisible, setDialogVisible] = useState(false);
+
   const isLoggedIn = user && user.email
 
   useEffect(() => {
@@ -28,8 +33,8 @@ export default function App() {
   function signUp() {
     createUserWithEmailAndPassword(auth, 'email@email.com', 'test123')
       .then((userCredential) => {
-        setUser(userCredential.user);  // Signed up
-        console.log(user);
+        setUser(userCredential.user); 
+        setHasSignedUpSession(true);  // Track as 'Signed up' for this session
       })
       .catch((error) => {
         console.log(error);
@@ -37,14 +42,22 @@ export default function App() {
   }
 
   function signIn() {
+    if (!hasSignedUpSession) {
+      setDialogVisible(true);
+      return;
+    }
+    else {
     signInWithEmailAndPassword(auth, 'email@email.com', 'test123')
       .then((userCredential) => {
         setUser(userCredential.user);  // Signed in
         console.log(user);  // First letter of email: user.email[0].toUpperCase()
+        return;
       })
       .catch((error) => {
         console.log(error);
+        return;
       })
+    }
   }
 
   function handleSignOut() {
@@ -57,58 +70,66 @@ export default function App() {
     });
   }
 
+  function closeDialog() {
+    setDialogVisible(false);
+  }
   
   return (
-    <div className="App">
-      <nav className="nav">
-        <div className="nav__container">
-          <div className='nav__row'>
-              <figure className='nav__logo'>
+    // <Router>
+      <div className="App">
+        <nav className="nav">
+          <div className="nav__container">
+            <div className='nav__row'>
+              <figure className='nav__figure'>
                 {loading ? (
-                  <>
-                    <img src={FrontendSimplifiedLogo} alt="Frontend Simplified logo" />
-                  </>
+                  <div className='nav__img--skeleton skeleton no-cursor'></div>
                 ) : (
-                  <div className='nav__logo--skeleton skeleton no-cursor'></div>  
+                  // <Routes>
+                    // <Route path="/">
+                      // <Link to="/">
+                        <a href='/' >
+                          <img className='nav__img' src={FrontendSimplifiedLogo} alt="Frontend Simplified logo" />
+                        </a>
+                      // </Link>
+                    // </Route>
+                  // </Routes>
                 )}
               </figure>
               <div className='nav__buttons'>
                 {loading ? (
                   <>
+                    <div className='button__skeleton skeleton no-cursor'></div>
+                    <div className='button__skeleton skeleton no-cursor'></div>
+                  </>
+                ) : isLoggedIn ? (
+                  <>
+                    <button className="btn" onClick={handleSignOut}>Log out</button>
+                    <div className="btn profile-icon">
+                      {user.email[0].toUpperCase()}
+                    </div>
+                  </>
+                ) : (
+                  <>
                     <button className='btn' onClick={signUp}>Sign up</button>
                     <button className='btn' onClick={signIn}>Log in</button>
                   </>
-                ) : isLoggedIn ? (
-                  <></>
-              <div>
-                <div className='button__skeleton skeleton no-cursor'></div>
-                <div className='button__skeleton skeleton no-cursor'></div>
+                )}
               </div>
-              )}
+            </div>
+          </div> 
+        </nav>
+
+        {dialogVisible && (
+          <div className='dialog'>
+            <div className='dialog__box'>
+              <p>Please, sign up before logging in.</p>
+              <button className='btn' onClick={closeDialog}>OK</button>
+            </div>
           </div>
-        </div>  
-      </nav>
-    </div>
+        )}
+      </div>
+    // </Router>
   );
 }
 
 
-{/* <link data-n-head="ssr" rel="icon" type="image/x-icon" href="/favicon.ico"></link> */}
-
-    // <div className="App">
-    //   <div className="dashboard__nav--content dashboard__nav--content-border">
-    //     <div className="flex align-center">
-    //       <figure className="logo">
-    //         <figure style={{display: 'flex'}}>
-    //           <img src='./public/img/Frontend Simplified Logo.853fbda.png' alt="" class="logo__img" />
-    //         </figure>
-    //       </figure>
-    //     </div>
-    //     <div>
-    //       <button onClick={signUp}>Sign up</button>
-    //       <button onClick={signIn}>Sign in</button>
-    //       {loading ? 'Loading...' : user.email}
-    //       <button onClick={signOff}>Sign out</button>
-    //     </div>
-    //   </div>
-    // </div>
