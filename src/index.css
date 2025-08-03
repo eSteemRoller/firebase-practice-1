@@ -51,20 +51,29 @@ body {
   align-items: center;
 }
 
+.nav__figure {
+  display: flex;
+}
+
 .nav__img {
   height: 100%;
   width: 100%;
-  max-height: 60px;
   max-width: 240px;
 }
 
 .skeleton {
-  background-color: rgb(204, 204, 204) !important;
+  background-color: rgb(200, 200, 200) !important;
 }
 
 .nav__img--skeleton {
-  max-height: 40px;
-  max-width: 120px;
+  height: 40px;
+  width: 120px;
+  border-radius: 4px;
+  color: rgb(200, 200, 200) !important;
+}
+
+.nav__buttons {
+  display: flex;
 }
 
 button {
@@ -88,6 +97,7 @@ button:hover {
 .button__skeleton {
   height: 32px;
   width: 64px;
+  border-radius: 4px;
   margin-right: 16px;
 }
 
