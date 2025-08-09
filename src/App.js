@@ -20,20 +20,45 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [hasSignedUpSession, setHasSignedUpSession] = useState(false);
   const [dialogVisible, setDialogVisible] = useState(false);
-  const [postId, setPostId] = useState("");
+
+  const [createDialogVisible, setCreateDialogVisible] = useState(false);
+  const [newPostTitle, setNewPostTitle] = useState("");
+  const [newPostDescription, setNewPostDescription] = useState("");
+
+  const [searchByPostId, setSearchByPostId] = useState("");
 
 
   const isLoggedIn = user && user.email
 
-  function createPost() {
-    const addPost = {
-      title: "Finish Firebase section",
-      description: "Finish Frontend Simplified, Module 5",
-      uid: user.uid,
-    };
-    addDoc(collection(db, "posts"), addPost)
-    // console.log(doc(db, "posts", id));
+  function openCreatePostDialog() {
+    setNewPostTitle("");
+    setNewPostDescription("");
+    setCreateDialogVisible(true);
   }
+
+  async function saveNewPost() {
+    if (!newPostTitle.trim() || !newPostDescription.trim()) {
+      alert("Please enter both a title and description.");
+      return;
+  }
+
+  const addPost = {
+    id: db.id,
+    title: newPostTitle.trim(),
+    description: newPostDescription.trim(),
+    uid: user.uid,
+  };
+
+  try {
+    await addDoc(collection(db, "posts"), addPost);
+    console.log("Post created:", addPost);
+  } catch (error) {
+    console.error("Error creating post:", error);
+  }
+
+  setCreateDialogVisible(false);
+}
+
 
   async function updatePost() {
     const hardcodedId = "64G7gIXMN6a4mGQZc2tW";
@@ -165,22 +190,22 @@ export default function App() {
                 </>
               ) : isLoggedIn ? (
                 <>
-                  <button className='btn' onClick={createPost}>Create Post</button>
+                  <button className='btn' onClick={openCreatePostDialog}>Create Post</button>
                   <button className='btn' onClick={getAllPosts}>See All Posts</button>
                   <div className="get-post-by-id__section">
                     <input
                       type="text"
                       className="input"
-                      placeholder="Enter Post ID"
-                      value={postId}
-                      onChange={(e) => setPostId(e.target.value)}
+                      placeholder="Enter Post Id"
+                      value={searchByPostId}
+                      onChange={(event) => setSearchByPostId(event.target.value)}
                     />
-                    <button className="btn" onClick={() => getPostById(postId)}>Get Post By Id</button>
+                    <button className="btn" onClick={() => getPostById(searchByPostId)}>Search Post By Post Id</button>
                   </div>
-                  <button className='btn' onClick={getPostByUid}>Get Post By UId</button>
-                  <button className='btn' onClick={updatePost}>Edit Post</button>
-                  <button className='btn' onClick={deletePost}>Delete Post</button>
-                  <button className='btn' onClick={handleSignOut}>Log out</button>
+                  <button className='btn' onClick={getPostByUid}>See All Posts By User</button>
+                  <button className='btn' onClick={updatePost}>Edit User Post By Id</button>
+                  <button className='btn' onClick={deletePost}>Delete User Post By Id</button>
+                  <button className='btn' onClick={handleSignOut}>Log Out</button>
                   <div className='user__profile'>
                     <div className='btn profile-icon'>
                       {user.email[0].toUpperCase()}
@@ -190,8 +215,8 @@ export default function App() {
                 </>
               ) : (
                 <>
-                  <button className='btn' onClick={signUp}>Sign up</button>
-                  <button className='btn' onClick={signIn}>Log in</button>
+                  <button className='btn' onClick={signUp}>Sign Up</button>
+                  <button className='btn' onClick={signIn}>Log In</button>
                 </>
               )}
             </div>
@@ -203,6 +228,30 @@ export default function App() {
           <div className='dialog__box'>
             <p>Please, sign up before logging in.</p>
             <button className='btn' onClick={closeDialog}>OK</button>
+          </div>
+        </div>
+      )}
+      {createDialogVisible && (
+        <div className='create-dialog'>
+          <div className='create-dialog__box'>
+            <h3>Create New Post</h3>
+            <input
+              type="text"
+              placeholder="Post Title"
+              value={newPostTitle}
+              onChange={(e) => setNewPostTitle(e.target.value)}
+              className="create-post__title-input"
+            />
+            <textarea
+              placeholder="Post Description"
+              value={newPostDescription}
+              onChange={(e) => setNewPostDescription(e.target.value)}
+              className="create-post__description-input"
+            ></textarea>
+            <div className='dialog__buttons'>
+              <button className='btn' onClick={saveNewPost}>Save</button>
+              <button className='btn btn--secondary' onClick={() => setCreateDialogVisible(false)}>Cancel</button>
+            </div>
           </div>
         </div>
       )}
