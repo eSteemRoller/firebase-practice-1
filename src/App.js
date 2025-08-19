@@ -13,7 +13,7 @@ import {
   where,
   updateDoc,
   deleteDoc,
-  setDoc, // replaced addDoc to store db data inside doc
+  setDoc, // replaced addDoc to store db-assigned post ID data inside db-Doc for easy ref
 } from "firebase/firestore";
 import {
   createUserWithEmailAndPassword,
@@ -41,7 +41,8 @@ export default function App() {
   const [editPostDescription, setEditPostDescription] = useState("");
 
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
-  const [deletePostId, setDeletePostId] = useState("");
+  const [deletePostDetails, setDeletePostDetails] = useState(null);
+  const [deletePostById, setDeletePostById] = useState("");
 
   const isLoggedIn = user && user.email;
 
@@ -58,18 +59,18 @@ export default function App() {
     }
 
     try {
-      // create a new document reference (Firestore will generate the ID)
+      // create a new document reference (Firestore will generate the doc/post ID)
       const docRef = doc(collection(db, "posts"));
 
-      // build the post object with the generated ID
+      // build the post object with the db-generated ID
       const addPost = {
         uid: user.uid,
-        id: docRef.id, // store ID inside the document
+        id: docRef.id, // store the post ID inside the document to view in console
         title: newPostTitle.trim(),
         description: newPostDescription.trim(),
       };
 
-      // use setDoc so we can include the ID field
+      // use setDoc (instead of addDoc) so we can include the ID field inside the doc for easy ref
       await setDoc(docRef, addPost);
 
       console.log("Post created with ID:", docRef.id);
@@ -99,6 +100,7 @@ export default function App() {
         setEditDialogVisible(true);
       } else {
         alert("No post found with that ID.");
+        console.warn("No post found with that ID.");
       }
     } catch (error) {
       console.error("Error opening edit dialog:", error);
@@ -125,22 +127,37 @@ export default function App() {
     }
   }
 
-  function openDeleteDialog(id) {
+  async function openDeleteDialog(id) {
     if (!id) {
       alert("Please enter a Post ID to delete.");
       return;
     }
-    setDeletePostId(id);
-    setDeleteDialogVisible(true);
+    try {
+    const postRef = doc(db, "posts", id);
+    const postSnap = await getDoc(postRef);
+      if (postSnap.exists()) {
+        setDeletePostById(id);
+        setDeletePostDetails(postSnap.data()); // save details for user confirmation
+        setDeleteDialogVisible(true);
+      } else {
+        alert("No post found with that ID.");
+        console.warn("No post found with that ID.");
+      }
+    } catch (error) {
+      console.error("Error checking post before delete:", error);
+    }
   }
 
   async function confirmDeletePost() {
     try {
-      const postRef = doc(db, "posts", deletePostId);
+      const postRef = doc(db, "posts", deletePostById);
       await deleteDoc(postRef);
-      console.log("Post deleted:", deletePostId);
+      console.log("Post deleted:", deletePostById);
+
+      // Reset state
       setDeleteDialogVisible(false);
-      setDeletePostId(""); // reset
+      setDeletePostDetails(null);
+      setDeletePostById("");
     } catch (error) {
       console.error("Error deleting post:", error);
     }
@@ -160,18 +177,20 @@ export default function App() {
     try {
       const postRef = doc(db, "posts", id);
       const postSnap = await getDoc(postRef);
-
+      
       if (postSnap.exists()) {
         console.log("Post data:", postSnap.data());
       } else {
+        alert("No post found with that ID.");
         console.warn("No post found with that ID.");
       }
+
     } catch (error) {
       console.error("Error fetching post:", error);
     }
   }
 
-  async function getPostByUid() {
+  async function getPostByUId() {
     const postCollectionRef = await query(
       collection(db, "posts"),
       where("uid", "==", user.uid)
@@ -189,9 +208,9 @@ export default function App() {
   }, []);
 
   function signUp() {
-    setHasSignedUpSession(true); // Track as 'Signed up' until new Mount
-
-    createUserWithEmailAndPassword(auth, "email@email.com", "test123")
+    setHasSignedUpSession(true); // Track state as 'Signed up' until new Mount
+    
+    createUserWithEmailAndPassword(auth, "user@email.com", "test123")
       .then((userCredential) => {
         setUser(userCredential.user);
         console.log(`${userCredential.user.email} has signed up`);
@@ -207,7 +226,7 @@ export default function App() {
       setLoginDialogVisible(true);
       return;
     } else {
-      signInWithEmailAndPassword(auth, "email@email.com", "test123")
+      signInWithEmailAndPassword(auth, "user@email.com", "test123")
         .then((userCredential) => {
           setUser(userCredential.user); // Signed in
           console.log(userCredential.user.email);
@@ -219,6 +238,11 @@ export default function App() {
     }
   }
 
+  function closeDialog() {
+  setLoginDialogVisible(false);
+  }
+
+
   function handleSignOut() {
     signOut(auth)
       .then(() => {
@@ -228,10 +252,6 @@ export default function App() {
         console.error(error);
         return;
       });
-  }
-
-  function closeDialog() {
-    setLoginDialogVisible(false);
   }
 
   return (
@@ -272,8 +292,8 @@ export default function App() {
                       className="input"
                       placeholder="Enter Post ID to Search"
                       value={searchByPostId}
-                      onChange={(event) =>
-                        setSearchByPostId(event.target.value)
+                      onChange={(e) =>
+                        setSearchByPostId(e.target.value)
                       }
                     />
                     <button
@@ -283,7 +303,7 @@ export default function App() {
                       Search Post By ID
                     </button>
                   </div>
-                  <button className="btn" onClick={getPostByUid}>
+                  <button className="btn" onClick={getPostByUId}>
                     See All Posts By User
                   </button>
                   <div className="edit-post-by-id__section">
@@ -306,12 +326,12 @@ export default function App() {
                       type="text"
                       className="input"
                       placeholder="Enter Post ID to Delete"
-                      value={deletePostId}
-                      onChange={(e) => setDeletePostId(e.target.value)}
+                      value={deletePostById}
+                      onChange={(e) => setDeletePostById(e.target.value)}
                     />
                     <button
                       className="btn"
-                      onClick={() => openDeleteDialog(deletePostId)}
+                      onClick={() => openDeleteDialog(deletePostById)}
                     >
                       Delete Post By ID
                     </button>
@@ -343,10 +363,10 @@ export default function App() {
       {signUpConfirmVisible && user && (
         <div className="dialog">
           <div className="dialog__box">
-            <h3>Sign Up Successful</h3>
-            <p>Welcome, {user.email}!</p>
+            <h3 className="dialog__box--element">Sign Up Successful</h3>
+            <p className="dialog__box--element">Welcome, {user.email}!</p>
             <button
-              className="btn"
+              className="d-btn"
               onClick={() => setSignUpConfirmVisible(false)}
             >
               OK
@@ -357,36 +377,36 @@ export default function App() {
       {loginDialogVisible && (
         <div className="dialog">
           <div className="dialog__box">
-            <p>Please, sign up before logging in.</p>
-            <button className="btn" onClick={closeDialog}>
+            <p className="dialog__box--element">Please, sign up before logging in.</p>
+            <button className="d-btn" onClick={closeDialog}>
               OK
             </button>
           </div>
         </div>
       )}
       {createDialogVisible && (
-        <div className="create-dialog">
-          <div className="create-dialog__box">
-            <h3>Create New Post</h3>
+        <div className="dialog">
+          <div className="dialog__box">
+            <h3 className="dialog__box--element">Create New Post</h3>
             <input
               type="text"
               placeholder="Post Title"
               value={newPostTitle}
               onChange={(e) => setNewPostTitle(e.target.value)}
-              className="create-post__title-input"
+              className="dialog__box--element title-input"
             />
             <textarea
               placeholder="Post Description"
               value={newPostDescription}
               onChange={(e) => setNewPostDescription(e.target.value)}
-              className="create-post__description-input"
+              className="dialog__box--element description-input"
             ></textarea>
             <div className="dialog__buttons">
-              <button className="btn" onClick={saveNewPost}>
+              <button className="d-btn" onClick={saveNewPost}>
                 Save
               </button>
               <button
-                className="btn btn--secondary"
+                className="d-btn btn--secondary"
                 onClick={() => setCreateDialogVisible(false)}
               >
                 Cancel
@@ -396,28 +416,28 @@ export default function App() {
         </div>
       )}
       {editDialogVisible && (
-        <div className="edit-dialog">
-          <div className="edit-dialog__box">
-            <h3>Edit Post</h3>
+        <div className="dialog">
+          <div className="dialog__box">
+            <h3 className="dialog__box--element">Edit Post</h3>
             <input
               type="text"
               placeholder="Post Title"
               value={editPostTitle}
               onChange={(e) => setEditPostTitle(e.target.value)}
-              className="input"
+              className="dialog__box--element title-input"
             />
             <textarea
               placeholder="Post Description"
               value={editPostDescription}
               onChange={(e) => setEditPostDescription(e.target.value)}
-              className="textarea"
+              className="dialog__box--element description-input"
             ></textarea>
             <div className="dialog__buttons">
-              <button className="btn" onClick={saveEditedPost}>
+              <button className="d-btn" onClick={saveEditedPost}>
                 Save
               </button>
               <button
-                className="btn btn--secondary"
+                className="d-btn btn--secondary"
                 onClick={() => setEditDialogVisible(false)}
               >
                 Cancel
@@ -427,16 +447,22 @@ export default function App() {
         </div>
       )}
       {deleteDialogVisible && (
-        <div className="delete-dialog">
-          <div className="delete-dialog__box">
-            <h3>Confirm Delete</h3>
-            <p>Are you sure you want to delete this post?</p>
+        <div className="dialog">
+          <div className="dialog__box">
+            <h3 className="dialog__box--element">Confirm Delete</h3>
+            {deletePostDetails && (
+              <div className="delete-dialog__details">
+                <p><strong>Title:</strong> {deletePostDetails.title}</p>
+                <p><strong>Description:</strong> {deletePostDetails.description}</p>
+              </div>
+            )}
+            <p className="dialog__box--element">Are you sure you want to delete this post?</p>
             <div className="dialog__buttons">
-              <button className="btn btn--danger" onClick={confirmDeletePost}>
+              <button className="d-btn btn--danger" onClick={confirmDeletePost}>
                 Yes, Delete
               </button>
               <button
-                className="btn btn--secondary"
+                className="d-btn btn--secondary"
                 onClick={() => setDeleteDialogVisible(false)}
               >
                 Cancel
